@@ -4,7 +4,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List
 
-from .types import ToolDefinition, ResponseFormat
+from .types import ToolDefinition, JSONSchema
 
 
 class ModelAdapter(ABC):
@@ -17,7 +17,7 @@ class ModelAdapter(ABC):
         clear_thinking: bool,
         stream: bool,
         tools: Optional[List[ToolDefinition]],
-        response_format: Optional[ResponseFormat],
+        json_schema: Optional[JSONSchema],
         max_tokens: Optional[int],
     ) -> Dict[str, Any]:
         """
@@ -28,7 +28,7 @@ class ModelAdapter(ABC):
             clear_thinking: 是否清空之前的思考
             stream: 是否流式输出
             tools: 工具定义列表
-            response_format: 响应格式
+            json_schema: JSON Schema 定义（用于 vLLM 结构化输出）
             max_tokens: 最大 token 数
 
         Returns:
@@ -66,14 +66,25 @@ class BaseModelAdapter(ModelAdapter):
         clear_thinking: bool,
         stream: bool,
         tools: Optional[List[ToolDefinition]],
-        response_format: Optional[ResponseFormat],
+        json_schema: Optional[JSONSchema],
         max_tokens: Optional[int],
     ) -> Dict[str, Any]:
-        """标准 OpenAI 模型参数"""
-        params = {}
+        """
+        标准 OpenAI 模型参数
 
-        if response_format is not None:
-            params["response_format"] = response_format
+        使用 vLLM 原生的 structured_outputs 格式
+        """
+        params: Dict[str, Any] = {}
+
+        # 构建 extra_body 用于 vLLM 结构化输出
+        extra_body: Dict[str, Any] = {}
+
+        if json_schema is not None:
+            # vLLM 官方推荐格式: {"structured_outputs": {"json": <schema>}}
+            extra_body["structured_outputs"] = {"json": json_schema}
+
+        if extra_body:
+            params["extra_body"] = extra_body
 
         if max_tokens is not None:
             params["max_tokens"] = max_tokens
@@ -106,15 +117,16 @@ class GLMAdapter(ModelAdapter):
         clear_thinking: bool,
         stream: bool,
         tools: Optional[List[ToolDefinition]],
-        response_format: Optional[ResponseFormat],
+        json_schema: Optional[JSONSchema],
         max_tokens: Optional[int],
     ) -> Dict[str, Any]:
         """
         GLM-4.7 特定参数配置
 
-        使用 extra_body 来传递 GLM 特有的参数：
+        使用 extra_body 来传递 GLM/vLLM 特有的参数：
         - chat_template_kwargs: 控制 thinking 模式
         - parallel_tool_calls: 启用并行工具调用
+        - structured_outputs: vLLM 结构化输出
         """
         params = {
             "extra_body": {
@@ -126,8 +138,9 @@ class GLMAdapter(ModelAdapter):
             }
         }
 
-        if response_format is not None:
-            params["response_format"] = response_format
+        if json_schema is not None:
+            # vLLM 官方推荐格式: {"structured_outputs": {"json": <schema>}}
+            params["extra_body"]["structured_outputs"] = {"json": json_schema}
 
         if max_tokens is not None:
             params["max_tokens"] = max_tokens

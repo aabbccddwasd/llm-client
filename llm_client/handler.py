@@ -4,7 +4,7 @@
 from typing import List, Dict, Any, Optional, Iterator, TYPE_CHECKING, Union
 
 from .types import (
-    ToolDefinition, ResponseFormat, StreamChunk,
+    ToolDefinition, JSONSchema, StreamChunk,
     ModelNotFoundError, ClientError,
 )
 from .clients.openai_client import OpenAIClient
@@ -130,7 +130,7 @@ class LLMHandler:
         model_name: Optional[str] = None,
         enable_thinking: bool = False,
         clear_thinking: bool = True,
-        response_format: Optional[ResponseFormat] = None,
+        json_schema: Optional[JSONSchema] = None,
         max_tokens: Optional[int] = None,
     ) -> Union[str, Iterator[StreamChunk]]:
         """
@@ -148,7 +148,7 @@ class LLMHandler:
             model_name: 模型调用名称（可选，默认使用默认模型）
             enable_thinking: 是否开启思考模式
             clear_thinking: 是否清空之前的思考
-            response_format: 响应格式，如 {"type": "json_object"}
+            json_schema: JSON Schema 定义（用于 vLLM 结构化输出）
             max_tokens: 最大生成 token 数
 
         Returns:
@@ -190,7 +190,7 @@ class LLMHandler:
                 model_name=model_name,
                 enable_thinking=enable_thinking,
                 clear_thinking=clear_thinking,
-                response_format=response_format,
+                json_schema=json_schema,
                 max_tokens=max_tokens,
             )
 
@@ -201,7 +201,7 @@ class LLMHandler:
         max_workers: int = 4,
         enable_thinking: bool = False,
         clear_thinking: bool = True,
-        response_format: Optional[ResponseFormat] = None,
+        json_schema: Optional[JSONSchema] = None,
         max_tokens: Optional[int] = None,
     ) -> List[str]:
         """
@@ -213,7 +213,7 @@ class LLMHandler:
             max_workers: 最大并发线程数
             enable_thinking: 是否开启思考模式
             clear_thinking: 是否清空之前的思考
-            response_format: 响应格式
+            json_schema: JSON Schema 定义（用于 vLLM 结构化输出）
             max_tokens: 最大 token 数
 
         Returns:
@@ -230,7 +230,7 @@ class LLMHandler:
             max_workers=max_workers,
             enable_thinking=enable_thinking,
             clear_thinking=clear_thinking,
-            response_format=response_format,
+            json_schema=json_schema,
             max_tokens=max_tokens,
         )
 

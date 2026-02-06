@@ -3,7 +3,7 @@
 
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 
-from ..types import ToolDefinition, ResponseFormat, ModelNotFoundError, ClientError
+from ..types import ToolDefinition, JSONSchema, ModelNotFoundError, ClientError
 from ..clients.base_client import BaseLLMClient
 
 if TYPE_CHECKING:
@@ -57,7 +57,7 @@ class ChatHandler:
         model_name: Optional[str] = None,
         enable_thinking: bool = False,
         clear_thinking: bool = True,
-        response_format: Optional[ResponseFormat] = None,
+        json_schema: Optional[JSONSchema] = None,
         max_tokens: Optional[int] = None,
     ) -> str:
         """
@@ -68,7 +68,7 @@ class ChatHandler:
             model_name: 模型调用名称，如果为 None 则使用默认模型
             enable_thinking: 是否开启思考模式
             clear_thinking: 是否清空之前的思考
-            response_format: 响应格式
+            json_schema: JSON Schema 定义（用于 vLLM 结构化输出）
             max_tokens: 最大 token 数
 
         Returns:
@@ -95,7 +95,7 @@ class ChatHandler:
                 enable_thinking=enable_thinking,
                 clear_thinking=clear_thinking,
                 tools=None,
-                response_format=response_format,
+                json_schema=json_schema,
                 max_tokens=max_tokens,
             )
 

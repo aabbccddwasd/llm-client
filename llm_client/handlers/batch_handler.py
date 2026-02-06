@@ -4,7 +4,7 @@
 import concurrent.futures
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
 
-from ..types import ToolDefinition, ResponseFormat, ModelNotFoundError, ClientError
+from ..types import ToolDefinition, JSONSchema, ModelNotFoundError, ClientError
 from ..clients.base_client import BaseLLMClient
 
 if TYPE_CHECKING:
@@ -63,7 +63,7 @@ class BatchHandler:
         max_workers: int = 4,
         enable_thinking: bool = False,
         clear_thinking: bool = True,
-        response_format: Optional[ResponseFormat] = None,
+        json_schema: Optional[JSONSchema] = None,
         max_tokens: Optional[int] = None,
     ) -> List[str]:
         """
@@ -75,7 +75,7 @@ class BatchHandler:
             max_workers: 最大并发线程数
             enable_thinking: 是否开启思考模式
             clear_thinking: 是否清空之前的思考
-            response_format: 响应格式
+            json_schema: JSON Schema 定义（用于 vLLM 结构化输出）
             max_tokens: 最大 token 数
 
         Returns:
@@ -108,7 +108,7 @@ class BatchHandler:
                     enable_thinking=enable_thinking,
                     clear_thinking=clear_thinking,
                     tools=None,
-                    response_format=response_format,
+                    json_schema=json_schema,
                     max_tokens=max_tokens,
                 )
                 return index, result

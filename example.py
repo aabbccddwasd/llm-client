@@ -2,6 +2,7 @@
 """llm_client 使用示例"""
 
 import logging
+import json
 from llm_client import LLMHandler, ToolDefinition
 
 # 配置日志（可选）
@@ -102,17 +103,89 @@ for i, result in enumerate(results):
     print(f"[{i}] {result[:50]}...")
 
 
-# ========== 示例 5: JSON 模式 ==========
-print("\n=== JSON 模式 ===")
-messages = [{"role": "user", "content": "用 JSON 格式返回你的介绍"}]
+# ========== 示例 5: 结构化输出 (JSON Schema) ==========
+print("\n=== 结构化输出 (vLLM JSON Schema) ===")
+
+# 定义 JSON Schema
+person_schema = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string", "description": "人物姓名"},
+        "age": {"type": "integer", "minimum": 0, "maximum": 150},
+        "occupation": {"type": "string", "description": "职业"},
+        "skills": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "技能列表"
+        }
+    },
+    "required": ["name", "age", "occupation"]
+}
+
+messages = [{"role": "user", "content": "创建一个人物介绍，包含姓名、年龄、职业和技能。"}]
+
 response = handler.call_llm(
     messages,
-    response_format={"type": "json_object"}
+    json_schema=person_schema
 )
 print(f"JSON 响应: {response}")
 
+# 验证可以解析为 JSON
+try:
+    parsed = json.loads(response)
+    print(f"解析后的 JSON: {json.dumps(parsed, indent=2, ensure_ascii=False)}")
+except json.JSONDecodeError:
+    print("警告: 响应不是有效的 JSON")
 
-# ========== 示例 6: 错误处理 ==========
+
+# ========== 示例 6: 复杂结构化输出 ==========
+print("\n=== 复杂结构化输出 (嵌套 Schema) ===")
+
+complex_schema = {
+    "type": "object",
+    "properties": {
+        "task": {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string"},
+                "priority": {"type": "string", "enum": ["low", "medium", "high", "urgent"]},
+                "assignee": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "name": {"type": "string"}
+                    },
+                    "required": ["id", "name"]
+                },
+                "subtasks": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "string"},
+                            "title": {"type": "string"},
+                            "completed": {"type": "boolean"}
+                        },
+                        "required": ["id", "title", "completed"]
+                    }
+                }
+            },
+            "required": ["title", "priority"]
+        }
+    },
+    "required": ["task"]
+}
+
+messages = [{"role": "user", "content": "创建一个任务，包含优先级high、分配给Alice(id:001)，以及2个未完成的子任务。"}]
+
+response = handler.call_llm(
+    messages,
+    json_schema=complex_schema
+)
+print(f"复杂 JSON 响应:\n{json.dumps(json.loads(response), indent=2, ensure_ascii=False)}")
+
+
+# ========== 示例 7: 错误处理 ==========
 print("\n=== 错误处理 ===")
 try:
     from llm_client import ModelNotFoundError

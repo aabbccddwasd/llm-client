@@ -4,7 +4,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional, Union, Iterator
 
-from ..types import ToolDefinition, ResponseFormat, ClientError
+from ..types import ToolDefinition, JSONSchema, ClientError
 
 
 class BaseLLMClient(ABC):
@@ -30,7 +30,7 @@ class BaseLLMClient(ABC):
         enable_thinking: bool = False,
         clear_thinking: bool = True,
         tools: Optional[List[ToolDefinition]] = None,
-        response_format: Optional[ResponseFormat] = None,
+        json_schema: Optional[JSONSchema] = None,
         max_tokens: Optional[int] = None,
     ) -> Union[str, Iterator]:
         """
@@ -43,7 +43,7 @@ class BaseLLMClient(ABC):
             enable_thinking: 是否开启思考模式
             clear_thinking: 是否清空之前的思考
             tools: 工具定义列表
-            response_format: 响应格式
+            json_schema: JSON Schema 定义（用于 vLLM 结构化输出）
             max_tokens: 最大 token 数
 
         Returns:

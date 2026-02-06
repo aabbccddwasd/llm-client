@@ -53,16 +53,36 @@ class ToolCall(TypedDict):
     function: ToolCallFunction
 
 
-# ==================== 响应格式类型 ====================
+# ==================== JSON Schema 类型 ====================
 
-class ResponseFormat(TypedDict):
-    """响应格式"""
-    type: str  # "text", "json_object", "json_schema"
+class JSONSchema(TypedDict, total=False):
+    """
+    JSON Schema 类型
 
+    用于 vLLM 结构化输出，直接传递 JSON Schema 定义。
 
-class JSONModeResponseFormat(TypedDict):
-    """JSON 模式响应格式"""
-    type: str  # "json_object"
+    vLLM 格式: {"structured_outputs": {"json": <JSONSchema>}}
+
+    Example:
+        >>> schema: JSONSchema = {
+        ...     "type": "object",
+        ...     "properties": {
+        ...         "name": {"type": "string"},
+        ...         "age": {"type": "integer"}
+        ...     },
+        ...     "required": ["name", "age"]
+        ... }
+    """
+    type: str
+    properties: Optional[Dict[str, Any]]
+    required: Optional[List[str]]
+    additionalProperties: Optional[bool]
+    items: Optional[Any]
+    enum: Optional[List[Any]]
+    minimum: Optional[Union[int, float]]
+    maximum: Optional[Union[int, float]]
+    format: Optional[str]
+    description: Optional[str]
 
 
 # ==================== LLM 调用选项 ====================
@@ -72,7 +92,7 @@ class LLMCallOptions(TypedDict, total=False):
     stream: bool
     enable_thinking: bool
     clear_thinking: bool
-    response_format: Optional[ResponseFormat]
+    json_schema: Optional[JSONSchema]
     max_tokens: Optional[int]
     tools: Optional[List[ToolDefinition]]
 
