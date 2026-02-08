@@ -5,13 +5,14 @@ from typing import List, Dict, Any, Optional, Iterator, TYPE_CHECKING, Union
 
 from .types import (
     ToolDefinition, JSONSchema, StreamChunk,
-    ModelNotFoundError, ClientError,
+    ModelNotFoundError, ClientError, OpenAIMessageBlock,
 )
 from .clients.openai_client import OpenAIClient
 from .handlers.chat_handler import ChatHandler
 from .handlers.stream_handler import StreamHandler
 from .handlers.tool_handler import ToolHandler
 from .handlers.batch_handler import BatchHandler
+from .handlers.embedding_handler import EmbeddingHandler
 
 if TYPE_CHECKING:
     import logging
@@ -121,6 +122,7 @@ class LLMHandler:
         self.stream_handler = StreamHandler(self.clients, self.default_client_name, logger=self.logger)
         self.tool_handler = ToolHandler(self.clients, self.default_client_name, logger=self.logger)
         self.batch_handler = BatchHandler(self.clients, self.default_client_name, logger=self.logger)
+        self.embedding_handler = EmbeddingHandler(self.clients, self.default_client_name, logger=self.logger)
 
     def call_llm(
         self,
@@ -254,3 +256,114 @@ class LLMHandler:
             模型调用名称列表
         """
         return list(self.clients.keys())
+
+    def embed_text(
+        self,
+        text: str,
+        model_name: Optional[str] = None,
+    ) -> List[float]:
+        """
+        单文本 embedding
+
+        Args:
+            text: 文本字符串
+            model_name: 模型调用名称（可选，默认使用默认模型）
+
+        Returns:
+            embedding 向量
+
+        Raises:
+            ModelNotFoundError: 当模型调用名称无效时
+            ClientError: 当 API 调用失败时
+
+        Example:
+            >>> vec = handler.embed_text("Hello world")
+            >>> print(len(vec))  # 4096
+        """
+        return self.embedding_handler.handle_text(text, model_name=model_name)
+
+    def batch_embed_text(
+        self,
+        texts: List[str],
+        model_name: Optional[str] = None,
+    ) -> List[List[float]]:
+        """
+        批量文本 embedding
+
+        Args:
+            texts: 文本列表
+            model_name: 模型调用名称（可选，默认使用默认模型）
+
+        Returns:
+            embedding 向量列表，顺序与输入一致
+
+        Raises:
+            ModelNotFoundError: 当模型调用名称无效时
+            ClientError: 当 API 调用失败时
+
+        Example:
+            >>> vecs = handler.batch_embed_text(["text1", "text2", "text3"])
+            >>> print(len(vecs))  # 3
+        """
+        return self.embedding_handler.handle_text_batch(texts, model_name=model_name)
+
+    def embed_multimodal(
+        self,
+        msg_block: OpenAIMessageBlock,
+        model_name: Optional[str] = None,
+    ) -> List[float]:
+        """
+        图文混合 embedding
+
+        支持 text、image_url、image_pil 类型。
+
+        Args:
+            msg_block: OpenAI 格式的消息块
+            model_name: 模型调用名称（可选，默认使用默认模型）
+
+        Returns:
+            embedding 向量
+
+        Raises:
+            ModelNotFoundError: 当模型调用名称无效时
+            ClientError: 当 API 调用失败时
+
+        Example:
+            >>> msg = {
+            ...     "role": "user",
+            ...     "content": [
+            ...         {"type": "text", "text": "What's in this image?"},
+            ...         {"type": "image_url", "image_url": {"url": "data:image/png;base64,..."}}
+            ...     ]
+            ... }
+            >>> vec = handler.embed_multimodal(msg)
+        """
+        return self.embedding_handler.handle_multimodal(msg_block, model_name=model_name)
+
+    def batch_embed_multimodal(
+        self,
+        msg_blocks: List[OpenAIMessageBlock],
+        model_name: Optional[str] = None,
+        max_workers: int = 4,
+    ) -> List[List[float]]:
+        """
+        批量图文混合 embedding
+
+        使用线程池并发处理多个消息块。
+
+        Args:
+            msg_blocks: OpenAI 格式的消息块列表
+            model_name: 模型调用名称（可选，默认使用默认模型）
+            max_workers: 最大并发线程数
+
+        Returns:
+            embedding 向量列表，顺序与输入一致
+
+        Raises:
+            ModelNotFoundError: 当模型调用名称无效时
+
+        Example:
+            >>> vecs = handler.batch_embed_multimodal([msg1, msg2, msg3], max_workers=4)
+            >>> print(len(vecs))  # 3
+        """
+        return self.embedding_handler.handle_multimodal_batch(msg_blocks, model_name=model_name, max_workers=max_workers)

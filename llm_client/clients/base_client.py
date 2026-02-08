@@ -64,3 +64,26 @@ class BaseLLMClient(ABC):
             模型名称字符串
         """
         pass
+
+    @abstractmethod
+    def embed(
+        self,
+        input_data: Union[str, List[str], Dict[str, Any], List[Dict[str, Any]]],
+        model_name: str,
+        extra_body: Optional[Dict[str, Any]] = None,
+    ) -> Union[List[float], List[List[float]]]:
+        """
+        Embedding 调用
+
+        Args:
+            input_data: 输入数据（文本字符串、文本列表、或图文混合结构）
+            model_name: 模型名称
+            extra_body: 额外的 API 参数（用于传图片）
+
+        Returns:
+            embedding 向量或向量列表
+
+        Raises:
+            ClientError: 当调用失败时
+        """
+        pass

@@ -154,6 +154,21 @@ class MappedModelConfig(TypedDict):
     label: str  # 用于日志标识
 
 
+# ==================== Embedding 类型 ====================
+
+class OpenAIMessageBlock(TypedDict, total=False):
+    """OpenAI 消息块格式（用于多模态 embedding）"""
+    role: str
+    content: List[Dict[str, Any]]
+
+
+class EmbeddingResponse(TypedDict, total=False):
+    """Embedding 响应"""
+    embedding: List[float]
+    tokens: int
+    index: int  # 批量场景下对应的原始索引
+
+
 # ==================== 错误类型 ====================
 
 class LLMError(Exception):

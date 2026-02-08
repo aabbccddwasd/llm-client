@@ -40,6 +40,7 @@ __all__ += [
     "LLMCallOptions",
     "StreamChunk",
     "ModelConfig",
+    "OpenAIMessageBlock",
     # 解析器
     "StreamingJSONParser",
     "StreamResponseParser",
@@ -62,6 +63,7 @@ from .types import (
     LLMCallOptions,
     StreamChunk,
     ModelConfig,
+    OpenAIMessageBlock,
 )
 
 from .parsers import StreamingJSONParser, StreamResponseParser
