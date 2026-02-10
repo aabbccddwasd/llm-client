@@ -3,29 +3,40 @@
 
 import logging
 import json
+import os
+from dotenv import load_dotenv
 from llm_client import LLMHandler, ToolDefinition
+
+# 加载环境变量文件
+load_dotenv()
 
 # 配置日志（可选）
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-# 配置模型
-models_config = [
-    {
-        "call_name": "main",
-        "name": "GLM-4.7",
-        "api_key": "your-api-key",
-        "api_base": "http://localhost:8000/v1"
-    },
-    {
-        "call_name": "backup",
-        "name": "Qwen3-VL",
-        "api_key": "your-api-key",
-        "api_base": "http://localhost:8001/v1"
-    }
-]
+# 从环境变量读取模型配置文件路径
+models_config_path = os.getenv("MODELS_CONFIG_PATH", "models.json")
+if os.path.exists(models_config_path):
+    with open(models_config_path, "r", encoding="utf-8") as f:
+        models_config = json.load(f)
+else:
+    # 默认配置（如果没有配置文件）
+    models_config = [
+        {
+            "call_name": "main",
+            "name": "GLM-4.7",
+            "api_key": "your-api-key",
+            "api_base": "http://192.168.3.123:8000/v1"
+        },
+        {
+            "call_name": "backup",
+            "name": "Qwen3-VL",
+            "api_key": "your-api-key",
+            "api_base": "http://localhost:8001/v1"
+        }
+    ]
 
 # 创建处理器
 handler = LLMHandler(models_config)
@@ -41,7 +52,7 @@ print(f"Response: {response}")
 
 # ========== 示例 2: 流式调用 ==========
 print("\n=== 流式调用 ===")
-messages = [{"role": "user", "content": "写一首短诗"}]
+messages = [{"role": "user", "content": "'1'+'1'='11'是不是对的"}]
 for chunk in handler.call_llm(messages, stream=True, enable_thinking=True):
     if "content_stream" in chunk:
         content = chunk["content_stream"]["content"]
@@ -194,3 +205,94 @@ except ModelNotFoundError as e:
     print(f"捕获错误: {e}")
 except Exception as e:
     print(f"其他错误: {e}")
+
+
+# ========== 示例 8: 文本 Embedding ==========
+print("\n=== 文本 Embedding ===")
+
+text = "这是一个句子，我们将其转换为向量表示。"
+embedding = handler.embed_text(text, model_name="embedding")
+print(f"文本: {text}")
+print(f"Embedding 维度: {len(embedding)}")
+print(f"Embedding 前 5 维: {embedding[:5]}")
+
+
+# ========== 示例 9: 批量文本 Embedding ==========
+print("\n=== 批量文本 Embedding ===")
+
+texts = [
+    "机器学习是人工智能的一个分支",
+    "深度学习基于神经网络",
+    "自然语言处理处理文本数据"
+]
+
+embeddings = handler.batch_embed_text(texts, model_name="embedding")
+print(f"处理文本数: {len(texts)}")
+for i, (text, emb) in enumerate(zip(texts, embeddings)):
+    print(f"[{i}] {text[:20]}... 维度: {len(emb)}")
+
+
+# ========== 示例 10: 图文混合 Embedding ==========
+print("\n=== 图文混合 Embedding ===")
+
+import base64
+
+# 假设有一个本地图片，转换为 base64
+# 注意: 此示例需要实际存在的图片文件
+try:
+    image_path = "example_image.jpg"
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as f:
+            image_base64 = base64.b64encode(f.read()).decode("utf-8")
+
+        # 构建多模态消息块
+        msg_block = [
+            {
+                "type": "text",
+                "text": "这张图片展示了什么内容？"
+            },
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{image_base64}"
+                }
+            }
+        ]
+
+        embedding = handler.embed_multimodal(msg_block, model_name="embedding")
+        print(f"图文混合 Embedding 维度: {len(embedding)}")
+    else:
+        print("未找到 example_image.jpg，跳过此示例")
+except Exception as e:
+    print(f"图文混合 Embedding 示例跳过: {e}")
+
+
+# ========== 示例 11: 计算文本相似度 ==========
+print("\n=== 计算文本相似度 ===")
+
+queries = [
+    "人工智能",
+    "汽车维修",
+    "机器学习算法"
+]
+
+# 计算 embedding
+query_embeddings = [handler.embed_text(q, model_name="embedding") for q in queries]
+
+# 计算相似度矩阵
+import numpy as np
+embeddings_array = np.array(query_embeddings)
+
+# 归一化
+norms = np.linalg.norm(embeddings_array, axis=1, keepdims=True)
+normalized_embeddings = embeddings_array / norms
+
+# 计算余弦相似度
+similarity_matrix = np.dot(normalized_embeddings, normalized_embeddings.T)
+
+print("相似度矩阵:")
+for i, q1 in enumerate(queries):
+    print(f"{q1}:")
+    for j, q2 in enumerate(queries):
+        if i != j:
+            print(f"  与 '{q2}' 的相似度: {similarity_matrix[i][j]:.4f}")

@@ -96,7 +96,6 @@ class StreamHandler:
                 enable_thinking=enable_thinking,
                 clear_thinking=clear_thinking,
                 tools=None,
-                response_format=None,
                 max_tokens=max_tokens,
             )
 

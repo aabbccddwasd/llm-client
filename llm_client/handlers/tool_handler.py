@@ -101,7 +101,6 @@ class ToolHandler:
                 enable_thinking=enable_thinking,
                 clear_thinking=clear_thinking,
                 tools=tools,
-                response_format=None,
                 max_tokens=max_tokens,
             )
 
