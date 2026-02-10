@@ -260,14 +260,14 @@ class LLMHandler:
     def embed_text(
         self,
         text: str,
-        model_name: Optional[str] = None,
+        model_name: Optional[str] = "embedding",
     ) -> List[float]:
         """
         单文本 embedding
 
         Args:
             text: 文本字符串
-            model_name: 模型调用名称（可选，默认使用默认模型）
+            model_name: 模型调用名称（可选，默认使用 "embedding"）
 
         Returns:
             embedding 向量
@@ -285,14 +285,14 @@ class LLMHandler:
     def batch_embed_text(
         self,
         texts: List[str],
-        model_name: Optional[str] = None,
+        model_name: Optional[str] = "embedding",
     ) -> List[List[float]]:
         """
         批量文本 embedding
 
         Args:
             texts: 文本列表
-            model_name: 模型调用名称（可选，默认使用默认模型）
+            model_name: 模型调用名称（可选，默认使用 "embedding"）
 
         Returns:
             embedding 向量列表，顺序与输入一致
@@ -310,7 +310,7 @@ class LLMHandler:
     def embed_multimodal(
         self,
         msg_block: OpenAIMessageBlock,
-        model_name: Optional[str] = None,
+        model_name: Optional[str] = "embedding",
     ) -> List[float]:
         """
         图文混合 embedding
@@ -319,7 +319,7 @@ class LLMHandler:
 
         Args:
             msg_block: OpenAI 格式的消息块
-            model_name: 模型调用名称（可选，默认使用默认模型）
+            model_name: 模型调用名称（可选，默认使用 "embedding"）
 
         Returns:
             embedding 向量
@@ -343,7 +343,7 @@ class LLMHandler:
     def batch_embed_multimodal(
         self,
         msg_blocks: List[OpenAIMessageBlock],
-        model_name: Optional[str] = None,
+        model_name: Optional[str] = "embedding",
         max_workers: int = 4,
     ) -> List[List[float]]:
         """
@@ -353,7 +353,7 @@ class LLMHandler:
 
         Args:
             msg_blocks: OpenAI 格式的消息块列表
-            model_name: 模型调用名称（可选，默认使用默认模型）
+            model_name: 模型调用名称（可选，默认使用 "embedding"）
             max_workers: 最大并发线程数
 
         Returns:
