@@ -296,3 +296,44 @@ for i, q1 in enumerate(queries):
     for j, q2 in enumerate(queries):
         if i != j:
             print(f"  与 '{q2}' 的相似度: {similarity_matrix[i][j]:.4f}")
+
+# ========== 示例 12: Matryoshka Embeddings (变长 embedding) ==========
+print("\n=== Matryoshka Embeddings ===")
+print("使用 dimensions 参数控制输出维度（仅支持 Matryoshka 的模型）")
+
+test_text = "这是一个测试文本，展示 Matryoshka Embeddings 功能。"
+
+# 标准 embedding（使用模型默认维度）
+standard_embedding = handler.embed_text(test_text, model_name="embedding")
+print(f"标准 embedding 维度: {len(standard_embedding)}")
+
+# 使用不同维度的 Matryoshka embedding
+for dim in [64, 128, 256, 512]:
+    embedding = handler.embed_text(test_text, model_name="embedding", dimensions=dim)
+    print(f"Matryoshka embedding (dimensions={dim:3d}) -> 实际维度: {len(embedding)}")
+
+# 批量使用 Matryoshka embedding
+print("\n批量 Matryoshka embedding (dimensions=128):")
+batch_texts = ["文本1", "文本2", "文本3"]
+batch_embeddings = handler.batch_embed_text(batch_texts, model_name="embedding", dimensions=128)
+for i, (text, emb) in enumerate(zip(batch_texts, batch_embeddings)):
+    print(f"  [{i}] {text}: 维度 {len(emb)}")
+
+# 图文混合的 Matryoshka embedding
+try:
+    image_path = "example_image.jpg"
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as f:
+            image_base64 = base64.b64encode(f.read()).decode("utf-8")
+
+        msg_block = [
+            {"type": "text", "text": "描述这张图片"},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
+        ]
+
+        multimodal_embedding = handler.embed_multimodal(msg_block, model_name="embedding", dimensions=128)
+        print(f"\n图文混合 Matryoshka embedding (dimensions=128): 维度 {len(multimodal_embedding)}")
+    else:
+        print("\n未找到 example_image.jpg，跳过图文混合 Matryoshka 示例")
+except Exception as e:
+    print(f"\n图文混合 Matryoshka 示例跳过: {e}")

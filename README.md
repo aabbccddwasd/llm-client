@@ -15,6 +15,8 @@
 - **模型适配器** - 通过适配器模式抽象不同模型的 API 差异
 - **批量并发** - 内置批量处理能力，使用线程池并发调用
 - **依赖注入** - Logger 可注入，完全由外部控制日志行为
+- **Embedding 支持** - 支持文本和多模态（图文混合）embedding
+- **Matryoshka Embeddings** - 支持变长维度输出，灵活平衡性能与存储效率
 
 ## 安装
 
@@ -115,6 +117,63 @@ for i, r in enumerate(results):
     print(f"[{i}] {r}")
 ```
 
+### Text Embedding
+
+```python
+# 单文本 embedding
+vec = handler.embed_text("Hello world", model_name="embedding")
+print(f"维度: {len(vec)}")  # 取决于模型，如 4096
+
+# 批量文本 embedding
+texts = ["这是第一条文本", "这是第二条文本"]
+vecs = handler.batch_embed_text(texts, model_name="embedding")
+print(f"处理了 {len(vecs)} 个向量")
+
+# 指定 Matryoshka 维度（支持 Matryoshka 的模型可用）
+vec_128 = handler.embed_text("Hello world", model_name="embedding", dimensions=128)
+print(f"维度: {len(vec_128)}")  # 128 维
+```
+
+### Matryoshka Embeddings
+
+Matryoshka Embeddings 允许动态指定输出维度，在降低存储和计算成本的同时保持良好的语义表示能力。
+
+```python
+# 使用不同维度
+for dim in [64, 128, 256, 512, 1024]:
+    vec = handler.embed_text("test", model_name="embedding", dimensions=dim)
+    print(f"{dim} 维: 压缩比 {1 - dim/4096:.1%}")
+
+# 批量使用 Matryoshka
+texts = ["文本1", "文本2", "文本3"]
+vecs = handler.batch_embed_text(texts, dimensions=128)
+# 每个向量都是 128 维
+```
+
+**效果说明:**
+- **排序一致性**：256 维以上与 4096 维的排序相关性 >0.90
+- **压缩比**：256 维可实现约 16 倍数据压缩
+- **推荐维度**：256-512 维在性能与效率间达到最佳平衡
+
+### 多模态 Embedding
+
+```python
+# 图文混合 embedding
+msg_block = {
+    "role": "user",
+    "content": [
+        {"type": "text", "text": "描述这张图片"},
+        {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}
+    ]
+}
+vec = handler.embed_multimodal(msg_block, model_name="embedding")
+
+# 支持 Matryoshka
+vec_128 = handler.embed_multimodal(msg_block, dimensions=128)
+```
+
+## 配置日志
+
 ## 配置日志
 
 ```python
@@ -139,10 +198,21 @@ handler = LLMHandler(models_config, logger=logger)
 
 主入口类，统一管理所有 LLM 调用。
 
-**方法:**
+**LLM 方法:**
 
-- `call_llm(messages, stream=False, tools=None, model_name=None, enable_thinking=False, clear_thinking=True, response_format=None, max_tokens=None)` - 统一调用接口
+- `call_llm(messages, stream=False, tools=None, model_name=None, enable_thinking=False, clear_thinking=True, json_schema=None, max_tokens=None)` - 统一调用接口
 - `batch_llm(messages_list, model_name=None, max_workers=4, enable_thinking=False, ...)` - 批量调用
+
+**Embedding 方法:**
+
+- `embed_text(text, model_name="embedding", dimensions=None)` - 单文本 embedding
+- `batch_embed_text(texts, model_name="embedding", dimensions=None)` - 批量文本 embedding
+- `embed_multimodal(msg_block, model_name="embedding", dimensions=None)` - 图文混合 embedding
+- `batch_embed_multimodal(msg_blocks, model_name="embedding", dimensions=None, max_workers=4)` - 批量图文混合 embedding
+
+**参数说明:**
+
+- `dimensions` - Matryoshka Embeddings 输出维度（可选），仅支持 Matryoshka 的模型可用
 
 **属性:**
 
@@ -168,21 +238,22 @@ handler = LLMHandler(models_config, logger=logger)
 
 ```
 llm_client/
-├── __init__.py       # 公共 API 导出
-├── handler.py        # LLMHandler 统一入口
-├── types.py          # 类型定义
-├── config.py         # 模型适配器
-├── clients/          # 客户端层
-│   ├── base_client.py
-│   └── openai_client.py
-├── handlers/         # 处理器层
-│   ├── chat_handler.py
-│   ├── stream_handler.py
-│   ├── tool_handler.py
-│   └── batch_handler.py
-└── parsers/          # 解析器层
-    ├── json_parser.py
-    └── stream_parser.py
+├── __init__.py            # 公共 API 导出
+├── handler.py             # LLMHandler 统一入口
+├── types.py               # 类型定义
+├── config.py              # 模型适配器
+├── clients/               # 客户端层
+│   ├── base_client.py     # 抽象基类
+│   └── openai_client.py   # OpenAI SDK 实现
+├── handlers/              # 处理器层
+│   ├── chat_handler.py    # 非流式聊天
+│   ├── stream_handler.py  # 流式输出
+│   ├── tool_handler.py    # 工具调用
+│   ├── batch_handler.py   # 批量处理
+│   └── embedding_handler.py  # Embedding 处理
+└── parsers/               # 解析器层
+    ├── json_parser.py     # 流式 JSON 解析
+    └── stream_parser.py   # 流式响应解析
 ```
 
 ## 许可证

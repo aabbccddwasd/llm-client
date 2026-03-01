@@ -261,6 +261,7 @@ class LLMHandler:
         self,
         text: str,
         model_name: Optional[str] = "embedding",
+        dimensions: Optional[int] = None,
     ) -> List[float]:
         """
         单文本 embedding
@@ -268,6 +269,7 @@ class LLMHandler:
         Args:
             text: 文本字符串
             model_name: 模型调用名称（可选，默认使用 "embedding"）
+            dimensions: Matryoshka Embeddings 维度（可选，支持 Matryoshka 的模型可用）
 
         Returns:
             embedding 向量
@@ -277,15 +279,17 @@ class LLMHandler:
             ClientError: 当 API 调用失败时
 
         Example:
-            >>> vec = handler.embed_text("Hello world")
-            >>> print(len(vec))  # 4096
+            >>> vec = handler.embed_text("Hello world")  # 使用默认维度
+            >>> vec = handler.embed_text("Hello world", dimensions=128)  # 使用 128 维
+            >>> print(len(vec))  # 128
         """
-        return self.embedding_handler.handle_text(text, model_name=model_name)
+        return self.embedding_handler.handle_text(text, model_name=model_name, dimensions=dimensions)
 
     def batch_embed_text(
         self,
         texts: List[str],
         model_name: Optional[str] = "embedding",
+        dimensions: Optional[int] = None,
     ) -> List[List[float]]:
         """
         批量文本 embedding
@@ -293,6 +297,7 @@ class LLMHandler:
         Args:
             texts: 文本列表
             model_name: 模型调用名称（可选，默认使用 "embedding"）
+            dimensions: Matryoshka Embeddings 维度（可选）
 
         Returns:
             embedding 向量列表，顺序与输入一致
@@ -302,15 +307,17 @@ class LLMHandler:
             ClientError: 当 API 调用失败时
 
         Example:
-            >>> vecs = handler.batch_embed_text(["text1", "text2", "text3"])
+            >>> vecs = handler.batch_embed_text(["text1", "text2", "text3"], dimensions=128)
             >>> print(len(vecs))  # 3
+            >>> print(len(vecs[0]))  # 128
         """
-        return self.embedding_handler.handle_text_batch(texts, model_name=model_name)
+        return self.embedding_handler.handle_text_batch(texts, model_name=model_name, dimensions=dimensions)
 
     def embed_multimodal(
         self,
         msg_block: OpenAIMessageBlock,
         model_name: Optional[str] = "embedding",
+        dimensions: Optional[int] = None,
     ) -> List[float]:
         """
         图文混合 embedding
@@ -320,6 +327,7 @@ class LLMHandler:
         Args:
             msg_block: OpenAI 格式的消息块
             model_name: 模型调用名称（可选，默认使用 "embedding"）
+            dimensions: Matryoshka Embeddings 维度（可选）
 
         Returns:
             embedding 向量
@@ -336,9 +344,9 @@ class LLMHandler:
             ...         {"type": "image_url", "image_url": {"url": "data:image/png;base64,..."}}
             ...     ]
             ... }
-            >>> vec = handler.embed_multimodal(msg)
+            >>> vec = handler.embed_multimodal(msg, dimensions=128)
         """
-        return self.embedding_handler.handle_multimodal(msg_block, model_name=model_name)
+        return self.embedding_handler.handle_multimodal(msg_block, model_name=model_name, dimensions=dimensions)
 
     def batch_embed_multimodal(
         self,

@@ -71,6 +71,7 @@ class BaseLLMClient(ABC):
         input_data: Union[str, List[str], Dict[str, Any], List[Dict[str, Any]]],
         model_name: str,
         extra_body: Optional[Dict[str, Any]] = None,
+        dimensions: Optional[int] = None,
     ) -> Union[List[float], List[List[float]]]:
         """
         Embedding 调用
@@ -79,6 +80,7 @@ class BaseLLMClient(ABC):
             input_data: 输入数据（文本字符串、文本列表、或图文混合结构）
             model_name: 模型名称
             extra_body: 额外的 API 参数（用于传图片）
+            dimensions: Matryoshka Embeddings 维度（支持 Matryoshka 的模型使用）
 
         Returns:
             embedding 向量或向量列表

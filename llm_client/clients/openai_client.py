@@ -130,14 +130,16 @@ class OpenAIClient(BaseLLMClient):
         input_data: Union[str, List[str], Dict[str, Any], List[Dict[str, Any]]],
         model_name: str,
         extra_body: Optional[Dict[str, Any]] = None,
+        dimensions: Optional[int] = None,
     ) -> Union[List[float], List[List[float]]]:
         """
-        实现 embedding 调用，处理图片编码
+        实现 embedding 调用，处理图片编码和 Matryoshka 维度
 
         Args:
             input_data: 输入数据（文本字符串、文本列表、或图文混合结构）
             model_name: 模型名称
             extra_body: 额外的 API 参数（用于传图片）
+            dimensions: Matryoshka Embeddings 维度（支持 Matryoshka 的模型使用）
 
         Returns:
             embedding 向量或向量列表
@@ -149,12 +151,18 @@ class OpenAIClient(BaseLLMClient):
             # 处理 extra_body 中的 PIL 图片和 OpenAIMessageBlock 格式的图片
             processed_extra = self._process_images_in_extra_body(extra_body) if extra_body else None
 
+            # 添加 Matryoshka dimensions 参数
+            if dimensions is not None:
+                if processed_extra is None:
+                    processed_extra = {}
+                processed_extra["dimensions"] = dimensions
+
             # 调用 API
             request_params = {"model": model_name, "input": input_data}
             if processed_extra:
                 request_params["extra_body"] = processed_extra
 
-            self.logger.debug(f"Calling embedding API [{self.label}]: model={model_name}")
+            self.logger.debug(f"Calling embedding API [{self.label}]: model={model_name}, dimensions={dimensions}")
 
             response = self.client.embeddings.create(**request_params)
 

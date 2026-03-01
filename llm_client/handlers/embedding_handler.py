@@ -58,13 +58,14 @@ class EmbeddingHandler:
             raise ModelNotFoundError(f"Unknown model call name: {client_name}")
         return client
 
-    def handle_text(self, text: str, model_name: Optional[str] = None) -> List[float]:
+    def handle_text(self, text: str, model_name: Optional[str] = None, dimensions: Optional[int] = None) -> List[float]:
         """
         处理单文本 embedding
 
         Args:
             text: 文本字符串
             model_name: 模型调用名称
+            dimensions: Matryoshka Embeddings 维度（可选）
 
         Returns:
             embedding 向量
@@ -74,19 +75,20 @@ class EmbeddingHandler:
             ClientError: 当 API 调用失败时
         """
         client = self._get_client(model_name)
-        self.logger.debug(f"EmbeddingHandler: text embedding, text_len={len(text)}")
+        self.logger.debug(f"EmbeddingHandler: text embedding, text_len={len(text)}, dimensions={dimensions}")
 
-        result = client.embed(text, client.get_model_name())
+        result = client.embed(text, client.get_model_name(), dimensions=dimensions)
         # 确保返回单个 embedding
         return result[0] if isinstance(result, list) and len(result) > 0 and isinstance(result[0], list) else result
 
-    def handle_text_batch(self, texts: List[str], model_name: Optional[str] = None) -> List[List[float]]:
+    def handle_text_batch(self, texts: List[str], model_name: Optional[str] = None, dimensions: Optional[int] = None) -> List[List[float]]:
         """
         处理批量文本 embedding
 
         Args:
             texts: 文本列表
             model_name: 模型调用名称
+            dimensions: Matryoshka Embeddings 维度（可选）
 
         Returns:
             embedding 向量列表，顺序与输入一致
@@ -96,11 +98,11 @@ class EmbeddingHandler:
             ClientError: 当 API 调用失败时
         """
         client = self._get_client(model_name)
-        self.logger.debug(f"EmbeddingHandler: batch text embedding, count={len(texts)}")
+        self.logger.debug(f"EmbeddingHandler: batch text embedding, count={len(texts)}, dimensions={dimensions}")
 
-        return client.embed(texts, client.get_model_name())
+        return client.embed(texts, client.get_model_name(), dimensions=dimensions)
 
-    def handle_multimodal(self, msg_block: OpenAIMessageBlock, model_name: Optional[str] = None) -> List[float]:
+    def handle_multimodal(self, msg_block: OpenAIMessageBlock, model_name: Optional[str] = None, dimensions: Optional[int] = None) -> List[float]:
         """
         处理图文混合 embedding
 
@@ -109,6 +111,7 @@ class EmbeddingHandler:
         Args:
             msg_block: OpenAI 格式的消息块
             model_name: 模型调用名称
+            dimensions: Matryoshka Embeddings 维度（可选）
 
         Returns:
             embedding 向量
@@ -138,10 +141,10 @@ class EmbeddingHandler:
         input_text = " ".join(text_parts) or ""
         extra_body = {"image": images} if images else None
 
-        self.logger.debug(f"EmbeddingHandler: multimodal embedding, text_len={len(input_text)}, image_count={len(images)}")
+        self.logger.debug(f"EmbeddingHandler: multimodal embedding, text_len={len(input_text)}, image_count={len(images)}, dimensions={dimensions}")
 
         # 调用 embed
-        result = client.embed(input_text, client.get_model_name(), extra_body=extra_body)
+        result = client.embed(input_text, client.get_model_name(), extra_body=extra_body, dimensions=dimensions)
         # 确保返回单个 embedding
         return result[0] if isinstance(result, list) and len(result) > 0 and isinstance(result[0], list) else result
 
