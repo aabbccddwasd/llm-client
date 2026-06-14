@@ -65,6 +65,10 @@ class BaseLLMClient(ABC):
         """
         pass
 
+    def get_last_reasoning(self) -> Optional[str]:
+        """获取最后一次非流式调用的 reasoning 内容（如有）"""
+        return None
+
     @abstractmethod
     def embed(
         self,

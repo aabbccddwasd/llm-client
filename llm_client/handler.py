@@ -185,7 +185,7 @@ class LLMHandler:
                     max_tokens=max_tokens,
                 )
         else:
-            # 非流式（不支持工具调用）
+            # 非流式（工具调用仅做检测和警告，不返回详细结构）
             self.logger.debug(f"call_llm: non-streaming chat, model={model_name or self.default_client_name}")
             return self.chat_handler.handle(
                 messages=messages,
@@ -194,6 +194,7 @@ class LLMHandler:
                 clear_thinking=clear_thinking,
                 json_schema=json_schema,
                 max_tokens=max_tokens,
+                tools=tools,
             )
 
     def batch_llm(

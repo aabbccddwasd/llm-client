@@ -49,6 +49,7 @@ class OpenAIClient(BaseLLMClient):
         self.model_name = model_name
         self.label = label
         self.adapter = get_adapter_for_model(model_name)
+        self._last_response_message = None
 
         # 注入或创建 logger
         if logger is not None:
@@ -114,8 +115,24 @@ class OpenAIClient(BaseLLMClient):
             if stream:
                 return response
             else:
-                content = response.choices[0].message.content or ""
-                return content
+                message = response.choices[0].message
+                self._last_response_message = message
+
+                if message.tool_calls:
+                    self.logger.warning(
+                        f"非流式响应包含工具调用。当前仅返回文本内容，"
+                        f"如需要处理 tool_calls 请使用 stream=True。"
+                    )
+
+                # 日志记录 reasoning（可能以 reasoning 或 reasoning_content 字段名返回）
+                reasoning = getattr(message, "reasoning", None) or getattr(message, "reasoning_content", None)
+                if reasoning:
+                    self.logger.debug(
+                        f"非流式响应包含 reasoning ({len(reasoning)} chars)，"
+                        f"可通过 client.get_last_reasoning() 获取"
+                    )
+
+                return message.content or ""
 
         except Exception as e:
             self.logger.error(f"LLM client error [{self.label}]: {str(e)}", exc_info=True)
@@ -124,6 +141,18 @@ class OpenAIClient(BaseLLMClient):
     def get_model_name(self) -> str:
         """获取客户端使用的模型名称"""
         return self.model_name
+
+    def get_last_reasoning(self) -> Optional[str]:
+        """获取最后一次非流式调用的 reasoning 内容（如有）
+
+        同时检测 reasoning 和 reasoning_content 两个可能的字段名（取决于 provider）。
+        """
+        if self._last_response_message is None:
+            return None
+        return (
+            getattr(self._last_response_message, "reasoning", None)
+            or getattr(self._last_response_message, "reasoning_content", None)
+        )
 
     def embed(
         self,

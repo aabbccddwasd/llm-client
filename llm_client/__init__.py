@@ -51,6 +51,7 @@ __all__ += [
     "ModelAdapter",
     "BaseModelAdapter",
     "GLMAdapter",
+    "DeepSeekAdapter",
     "get_adapter_for_model",
 ]
 
@@ -68,4 +69,4 @@ from .types import (
 
 from .parsers import StreamingJSONParser, StreamResponseParser
 from .clients import BaseLLMClient, OpenAIClient
-from .config import ModelAdapter, BaseModelAdapter, GLMAdapter, get_adapter_for_model
+from .config import ModelAdapter, BaseModelAdapter, GLMAdapter, DeepSeekAdapter, get_adapter_for_model

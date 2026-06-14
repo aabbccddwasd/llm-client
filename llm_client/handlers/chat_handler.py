@@ -59,6 +59,7 @@ class ChatHandler:
         clear_thinking: bool = True,
         json_schema: Optional[JSONSchema] = None,
         max_tokens: Optional[int] = None,
+        tools: Optional[List[ToolDefinition]] = None,
     ) -> str:
         """
         处理非流式聊天请求
@@ -70,6 +71,7 @@ class ChatHandler:
             clear_thinking: 是否清空之前的思考
             json_schema: JSON Schema 定义（用于 vLLM 结构化输出）
             max_tokens: 最大 token 数
+            tools: 工具定义列表（非流式仅支持检测，建议使用流式模式）
 
         Returns:
             LLM 返回的完整文本内容
@@ -94,7 +96,7 @@ class ChatHandler:
                 stream=False,
                 enable_thinking=enable_thinking,
                 clear_thinking=clear_thinking,
-                tools=None,
+                tools=tools,
                 json_schema=json_schema,
                 max_tokens=max_tokens,
             )

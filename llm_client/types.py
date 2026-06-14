@@ -16,6 +16,7 @@ class AssistantMessage(TypedDict, total=False):
     """最终助手消息类型"""
     role: str
     content: Optional[str]
+    refusal: Optional[str]
     reasoning_content: Optional[str]
     tool_calls: Optional[List[Dict[str, Any]]]
 
@@ -50,6 +51,7 @@ class ToolCallFunction(TypedDict, total=False):
 class ToolCall(TypedDict):
     """工具调用"""
     id: str
+    type: str  # "function"
     function: ToolCallFunction
 
 

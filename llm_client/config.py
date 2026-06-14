@@ -223,6 +223,66 @@ class Qwen35Adapter(ModelAdapter):
         }
 
 
+class DeepSeekAdapter(ModelAdapter):
+    """DeepSeek 系列模型适配器 - 支持思考模式和工具调用
+
+    DeepSeek 官方 API 使用 extra_body.thinking.type + reasoning_effort 控制思考模式，
+    不同于 vLLM 的 chat_template_kwargs。
+    """
+
+    def get_model_specific_params(
+        self,
+        enable_thinking: bool,
+        clear_thinking: bool,
+        stream: bool,
+        tools: Optional[List[ToolDefinition]],
+        json_schema: Optional[JSONSchema],
+        max_tokens: Optional[int],
+    ) -> Dict[str, Any]:
+        """
+        DeepSeek 特定参数配置
+
+        使用 extra_body 来传递：
+        - thinking: 控制 thinking 模式（官方格式）
+        - reasoning_effort: 思考强度
+        - structured_outputs: vLLM 结构化输出
+        """
+        params: Dict[str, Any] = {}
+        extra_body: Dict[str, Any] = {}
+
+        # 思考模式：DeepSeek 官方 API 使用 extra_body.thinking.type + reasoning_effort
+        if enable_thinking:
+            extra_body["thinking"] = {"type": "enabled"}
+            params["reasoning_effort"] = "high"
+
+        if json_schema is not None:
+            extra_body["structured_outputs"] = {"json": json_schema}
+
+        if extra_body:
+            params["extra_body"] = extra_body
+
+        if max_tokens is not None:
+            params["max_tokens"] = max_tokens
+
+        if tools is not None:
+            params["tools"] = tools
+
+        return params
+
+    def get_base_params(
+        self,
+        messages: List[Dict[str, Any]],
+        model_name: str,
+        stream: bool,
+    ) -> Dict[str, Any]:
+        """标准基础参数"""
+        return {
+            "messages": messages,
+            "model": model_name,
+            "stream": stream,
+        }
+
+
 # 模型名称到适配器的映射
 MODEL_ADAPTER_MAP: Dict[str, ModelAdapter] = {
     # 标准适配器用于任何 OpenAI 兼容的模型
@@ -231,6 +291,8 @@ MODEL_ADAPTER_MAP: Dict[str, ModelAdapter] = {
     "glm": GLMAdapter(),
     # Qwen3.5 特定适配器
     "qwen35": Qwen35Adapter(),
+    # DeepSeek 系列适配器
+    "deepseek": DeepSeekAdapter(),
 }
 
 
@@ -253,10 +315,18 @@ def get_adapter_for_model(model_name: str) -> ModelAdapter:
         >>> isinstance(adapter, Qwen35Adapter)
         True
 
+        >>> adapter = get_adapter_for_model("DeepSeek-V4-Flash")
+        >>> isinstance(adapter, DeepSeekAdapter)
+        True
+
         >>> adapter = get_adapter_for_model("Qwen3-VL-30B")
         >>> isinstance(adapter, BaseModelAdapter)
         True
     """
+    # DeepSeek 系列模型使用 DeepSeekAdapter
+    if "DEEPSEEK" in model_name.upper():
+        return MODEL_ADAPTER_MAP["deepseek"]
+
     # Qwen3.5 模型使用 Qwen3.5 适配器（如：Qwen3.5-397B-A17B-NVFP4）
     if "QWEN3.5" in model_name.upper():
         return MODEL_ADAPTER_MAP["qwen35"]

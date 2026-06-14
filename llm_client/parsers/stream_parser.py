@@ -49,6 +49,7 @@ class StreamResponseParser:
 
         self.reasoning_content: str = ""
         self.content: str = ""
+        self.refusal: Optional[str] = None
         self.tool_calls: Dict[int, Dict[str, Any]] = {}
 
     def parse(self, stream: Iterator) -> Iterator[StreamChunk]:
@@ -97,10 +98,20 @@ class StreamResponseParser:
         delta = chunk.choices[0].delta
         chunk_id = chunk.id
 
-        # 处理思考内容 - 新版本 GLM-4.7 使用 'reasoning' 字段
+        # 处理思考内容 - 不同 provider 可能使用不同字段名
+        reasoning_text = None
         if hasattr(delta, "reasoning") and delta.reasoning:
-            self.reasoning_content += delta.reasoning
-            yield {"content_stream": {"id": chunk_id, "content": delta.reasoning}}
+            reasoning_text = delta.reasoning
+        elif hasattr(delta, "reasoning_content") and delta.reasoning_content:
+            reasoning_text = delta.reasoning_content
+        if reasoning_text:
+            self.reasoning_content += reasoning_text
+            yield {"content_stream": {"id": chunk_id, "content": reasoning_text}}
+
+        # 处理拒绝内容
+        if hasattr(delta, "refusal") and delta.refusal:
+            self.refusal = (self.refusal or "") + delta.refusal
+            yield {"content_stream": {"id": chunk_id, "content": delta.refusal}}
 
         # 处理普通文本内容
         if delta.content:
@@ -141,6 +152,7 @@ class StreamResponseParser:
                 yield {
                     "tool_call": {
                         "id": self.tool_calls[idx]["id"],
+                        "type": "function",
                         "function": {"name": tool_call.function.name, "arguments": ""}
                     }
                 }
@@ -159,6 +171,7 @@ class StreamResponseParser:
                     yield {
                         "tool_call": {
                             "id": self.tool_calls[idx]["id"],
+                            "type": "function",
                             "function": {
                                 "name": self.tool_calls[idx]["function"]["name"],
                                 "arguments": deltas
@@ -179,6 +192,7 @@ class StreamResponseParser:
             clean_tool_calls = [
                 {
                     "id": tc["id"],
+                    "type": "function",
                     "function": {
                         "name": tc["function"]["name"],
                         "arguments": tc["function"]["arguments"]
@@ -190,6 +204,7 @@ class StreamResponseParser:
         return {
             "role": "assistant",
             "content": self.content if self.content else None,
+            "refusal": self.refusal,
             "reasoning_content": self.reasoning_content if self.reasoning_content else None,
             "tool_calls": clean_tool_calls
         }
@@ -198,4 +213,5 @@ class StreamResponseParser:
         """重置解析器状态，用于新的解析任务"""
         self.reasoning_content = ""
         self.content = ""
+        self.refusal = None
         self.tool_calls = {}

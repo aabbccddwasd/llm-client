@@ -134,8 +134,10 @@ class EmbeddingHandler:
                 if url:
                     images.append(url)
             elif item.get("type") == "image_pil":
-                # PIL 图片会在 extra_body 中处理
-                pass  # 留给 embed() 方法处理
+                # PIL 图片交由 embed() 中的 _encode_single_image() 处理
+                pil_image = item.get("image")
+                if pil_image:
+                    images.append(pil_image)
 
         # 准备输入参数
         input_text = " ".join(text_parts) or ""
